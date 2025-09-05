@@ -59,16 +59,18 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'jfrog-creds', 
-                                             usernameVariable: 'JFROG_USER', 
-                                             passwordVariable: 'JFROG_PASSWORD')]) {
-                    sh """
-                        docker login ${JFROG_URL} -u ${JFROG_USER} -p ${JFROG_PASSWORD}
-                        docker tag ${DOCKER_IMAGE}:latest ${JFROG_URL}${DOCKER_IMAGE}:latest
-                        docker push ${JFROG_URL}${DOCKER_IMAGE}:latest
-                    """
-                }
+                                                     usernameVariable: 'JFROG_USER', 
+                                                     passwordVariable: 'JFROG_PASSWORD')]) {
+                        sh """
+                            docker login ${JFROG_URL} -u ${JFROG_USER} -p ${JFROG_PASSWORD}
+                            docker tag ${DOCKER_IMAGE}:latest ${JFROG_URL}${DOCKER_IMAGE}:latest
+                            docker push ${JFROG_URL}${DOCKER_IMAGE}:latest
+                        """
+                    } 
+                } 
             }
-        }
+        } 
+
 
         stage('Deploy Container') {
             steps {
