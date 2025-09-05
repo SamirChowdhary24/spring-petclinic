@@ -2,39 +2,39 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven-3.8.7'
-        jdk 'java-17-openjdk'  // name must match what you added in Jenkins tool config
+        jdk 'jdk17'          // Jenkins JDK tool name
+        maven 'maven3'       // Jenkins Maven tool name
+        // Sonar scanner tool is configured later in stages
     }
 
     environment {
-        SONARQUBE = 'sonarqube-server'   // name you set in Jenkins
-        SONAR_TOKEN = credentials('sonar-token')
-        JFROG_CREDS = credentials('jfrog-creds')
-        DOCKER_REPO = "trialepv7i1.jfrog.io/petclinic-docker"  // replace with your repo name
-        IMAGE_NAME = "petclinic-app"
-        IMAGE_TAG = "latest"
+        // SonarQube
+        SONARQUBE_SERVER = 'sonarqube-server'
+        SONARQUBE_CREDENTIALS = 'sonar-token'  // Secret Text credential ID in Jenkins
+
+        // JFrog Artifactory
+        JFROG_CREDENTIALS = 'jfrog-creds'      // Username + API token in Jenkins
+        JFROG_URL = 'https://trialepv7i1.jfrog.io/artifactory/petclinic-repo/'
+
+        // Docker
+        DOCKER_IMAGE = 'petclinic-app'
+        DOCKER_CONTAINER_PORT = '8082'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/YOUR-REPO/petclinic.git'
+                git branch: 'main', url: 'https://github.com/SamirChowdhary24/spring-petclinic.git'
             }
         }
 
-        stage('Build with Maven') {
+        stage('Build & Test') {
             steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-
-        stage('Unit Tests') {
-            steps {
-                sh 'mvn test'
+                sh 'mvn clean install'
             }
             post {
                 always {
-                    junit 'target/surefire-reports/*.xml'
+                    junit '**/target/surefire-reports/*.xml'
                 }
             }
         }
@@ -42,37 +42,49 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube-server') {
-                    sh "mvn sonar:sonar -Dsonar.login=${SONAR_TOKEN}"
+                    sh "mvn sonar:sonar -Dsonar.login=${SONARQUBE_CREDENTIALS}"
                 }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE}:latest ."
             }
         }
 
         stage('Trivy Scan') {
             steps {
-                sh """
-                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                trivy image --exit-code 1 --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG} || true
-                """
+                sh "trivy image --exit-code 1 --severity HIGH,CRITICAL ${DOCKER_IMAGE}:latest || true"
             }
         }
 
         stage('Push to JFrog') {
             steps {
-                sh """
-                echo ${JFROG_CREDS_PSW} | docker login -u ${JFROG_CREDS_USR} trialepv7i1.jfrog.io --password-stdin
-                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_REPO}/${IMAGE_NAME}:${IMAGE_TAG}
-                docker push ${DOCKER_REPO}/${IMAGE_NAME}:${IMAGE_TAG}
-                """
+                script {
+                    sh """
+                        docker login ${JFROG_URL} -u ${JFROG_CREDENTIALS_USR} -p ${JFROG_CREDENTIALS_PSW}
+                        docker tag ${DOCKER_IMAGE}:latest ${JFROG_URL}${DOCKER_IMAGE}:latest
+                        docker push ${JFROG_URL}${DOCKER_IMAGE}:latest
+                    """
+                }
             }
         }
 
-        stage('Deploy Locally') {
+        stage('Deploy Container') {
             steps {
                 sh """
-                docker rm -f petclinic || true
-                docker run -d --name petclinic -p 8082:8080 ${DOCKER_REPO}/${IMAGE_NAME}:${IMAGE_TAG}
+                    docker stop ${DOCKER_IMAGE} || true
+                    docker rm ${DOCKER_IMAGE} || true
+                    docker run -d --name ${DOCKER_IMAGE} -p ${DOCKER_CONTAINER_PORT}:8080 ${DOCKER_IMAGE}:latest
                 """
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline finished.'
         }
     }
 }
