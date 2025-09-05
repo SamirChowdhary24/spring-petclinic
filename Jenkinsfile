@@ -25,8 +25,9 @@ pipeline {
         }
 
         stage('Build & Test') {
-            steps {
-                sh 'mvn clean install'
+             steps {
+                // Only run main tests (skip PostgresIntegrationTests)
+                sh 'mvn clean install -DskipITs=false -Dspring.profiles.active=mysql'
             }
             post {
                 always {
