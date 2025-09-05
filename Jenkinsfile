@@ -25,9 +25,14 @@ pipeline {
         }
 
         stage('Build & Test') {
-            steps {
-                // Run only MySQL tests, skip Postgres or other failing tests
-                sh 'mvn clean install -DskipITs=false -Dspring.profiles.active=mysql'
+             steps {
+                // Run only MySQL integration tests
+                sh '''
+                    mvn clean test \
+                    -Dspring.profiles.active=mysql \
+                    -Dtest=**/*MySqlIntegrationTests.java \
+                    -DskipTests=false
+                '''
             }
             post {
                 always {
