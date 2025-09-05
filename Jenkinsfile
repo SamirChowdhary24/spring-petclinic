@@ -12,8 +12,6 @@ pipeline {
         SONARQUBE_CREDENTIALS = 'sonar-token'
     
         JFROG_URL = 'https://trialepv7i1.jfrog.io/artifactory/petclinic-repo/'
-        JFROG_CREDENTIALS_USR = credentials('jfrog-creds').username
-        JFROG_CREDENTIALS_PSW = credentials('jfrog-creds').password
     
         DOCKER_IMAGE = 'petclinic-app'
         DOCKER_CONTAINER_PORT = '8082'
@@ -60,8 +58,11 @@ pipeline {
         stage('Push to JFrog') {
             steps {
                 script {
+                    withCredentials([usernamePassword(credentialsId: 'jfrog-creds', 
+                                             usernameVariable: 'JFROG_USER', 
+                                             passwordVariable: 'JFROG_PASSWORD')]) {
                     sh """
-                        docker login ${JFROG_URL} -u ${JFROG_CREDENTIALS_USR} -p ${JFROG_CREDENTIALS_PSW}
+                        docker login ${JFROG_URL} -u ${JFROG_USER} -p ${JFROG_PASSWORD}
                         docker tag ${DOCKER_IMAGE}:latest ${JFROG_URL}${DOCKER_IMAGE}:latest
                         docker push ${JFROG_URL}${DOCKER_IMAGE}:latest
                     """
