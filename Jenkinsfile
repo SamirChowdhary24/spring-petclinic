@@ -8,15 +8,13 @@ pipeline {
     }
 
     environment {
-        // SonarQube
         SONARQUBE_SERVER = 'sonarqube-server'
-        SONARQUBE_CREDENTIALS = 'sonar-token'  // Secret Text credential ID in Jenkins
-
-        // JFrog Artifactory
-        JFROG_CREDENTIALS = 'jfrog-creds'      // Username + API token in Jenkins
+        SONARQUBE_CREDENTIALS = 'sonar-token'
+    
         JFROG_URL = 'https://trialepv7i1.jfrog.io/artifactory/petclinic-repo/'
-
-        // Docker
+        JFROG_CREDENTIALS_USR = credentials('jfrog-creds').username
+        JFROG_CREDENTIALS_PSW = credentials('jfrog-creds').password
+    
         DOCKER_IMAGE = 'petclinic-app'
         DOCKER_CONTAINER_PORT = '8082'
     }
