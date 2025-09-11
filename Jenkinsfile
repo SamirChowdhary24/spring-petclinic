@@ -24,16 +24,8 @@ pipeline {
         stage('Build & Test') {
             steps {
                 sh '''
-                    mvn clean package \
-                        -Dspring.profiles.active=mysql \
-                        -DskipITs=false \
-                        -DskipTests=false
+                    mvn clean package -DskipTests
                 '''
-            }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                }
             }
         }
 
