@@ -4,7 +4,6 @@ pipeline {
     tools {
         jdk 'jdk17'          // Jenkins JDK tool name
         maven 'maven3'       // Jenkins Maven tool name
-        // Sonar scanner tool is configured later in stages
     }
 
     environment {
@@ -25,12 +24,11 @@ pipeline {
         }
 
         stage('Build & Test') {
-             steps {
-                // Run only MySQL integration tests
+            steps {
+                // Build JAR with MySQL profile
                 sh '''
-                    mvn clean test \
+                    mvn clean package \
                     -Dspring.profiles.active=mysql \
-                    -Dtest=**/*MySqlIntegrationTests.java \
                     -DskipTests=false
                 '''
             }
@@ -51,32 +49,36 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${DOCKER_IMAGE}:latest ."
+                sh '''
+                    echo "📂 Checking target directory before Docker build..."
+                    ls -lh target/ || echo "❌ No target folder found!"
+                    
+                    docker build -t ${DOCKER_IMAGE}:latest .
+                '''
             }
         }
 
         stage('Trivy Scan') {
             steps {
-                sh "trivy image --exit-code 1 --severity HIGH,CRITICAL ${DOCKER_IMAGE}:latest "
+                sh "trivy image --exit-code 1 --severity HIGH,CRITICAL ${DOCKER_IMAGE}:latest"
             }
         }
 
         stage('Push to JFrog') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'jfrog-creds', 
-                                                     usernameVariable: 'JFROG_USER', 
+                    withCredentials([usernamePassword(credentialsId: 'jfrog-creds',
+                                                     usernameVariable: 'JFROG_USER',
                                                      passwordVariable: 'JFROG_PASSWORD')]) {
                         sh """
                             docker login ${JFROG_URL} -u ${JFROG_USER} -p ${JFROG_PASSWORD}
                             docker tag ${DOCKER_IMAGE}:latest ${JFROG_URL}${DOCKER_IMAGE}:latest
                             docker push ${JFROG_URL}${DOCKER_IMAGE}:latest
                         """
-                    } 
-                } 
+                    }
+                }
             }
-        } 
-
+        }
 
         stage('Deploy Container') {
             steps {
