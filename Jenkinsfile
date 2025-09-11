@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     tools {
-        jdk 'jdk17'          // Jenkins JDK tool name
-        maven 'maven3'       // Jenkins Maven tool name
+        jdk 'jdk17'        // Jenkins JDK tool name
+        maven 'maven3'     // Jenkins Maven tool name
     }
 
     environment {
-        SONARQUBE_SERVER = 'sonarqube-server'   // Matches your Jenkins config
-        SONARQUBE_CREDENTIALS = 'sonar-token'
-        JFROG_URL = 'https://trialepv7i1.jfrog.io/artifactory/petclinic-repo/'
+        SONARQUBE_SERVER = 'sonarqube-server'   // Matches Manage Jenkins > System config
+        JFROG_REGISTRY = 'trialepv7i1.jfrog.io'
+        JFROG_REPO = 'petclinic-repo'
         DOCKER_IMAGE = 'petclinic-app'
         DOCKER_CONTAINER_PORT = '8082'
     }
@@ -40,15 +40,16 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube-server') {
-                    // Jenkins automatically injects scanner if installed under "Global Tool Configuration"
-                    sh "mvn sonar:sonar -Dsonar.login=$SONARQUBE_CREDENTIALS"
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh "mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN"
+                    }
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "ls -lh target/"   // 👈 debug: check JAR exists
+                sh "ls -lh target/"   // debug: confirm JAR exists
                 sh "docker build -t ${DOCKER_IMAGE}:latest ."
             }
         }
@@ -66,9 +67,9 @@ pipeline {
                                                      usernameVariable: 'JFROG_USER',
                                                      passwordVariable: 'JFROG_PASSWORD')]) {
                         sh """
-                            docker login ${JFROG_URL} -u ${JFROG_USER} -p ${JFROG_PASSWORD}
-                            docker tag ${DOCKER_IMAGE}:latest ${JFROG_URL}${DOCKER_IMAGE}:latest
-                            docker push ${JFROG_URL}${DOCKER_IMAGE}:latest
+                            echo "$JFROG_PASSWORD" | docker login ${JFROG_REGISTRY} -u "$JFROG_USER" --password-stdin
+                            docker tag ${DOCKER_IMAGE}:latest ${JFROG_REGISTRY}/${JFROG_REPO}/${DOCKER_IMAGE}:latest
+                            docker push ${JFROG_REGISTRY}/${JFROG_REPO}/${DOCKER_IMAGE}:latest
                         """
                     }
                 }
