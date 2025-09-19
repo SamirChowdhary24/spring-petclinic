@@ -7,11 +7,18 @@ pipeline {
     }
 
     environment {
-        SONARQUBE_SERVER = 'sonarqube-server'   // Matches Manage Jenkins > System config
-        JFROG_REGISTRY = 'trialepv7i1.jfrog.io'
-        JFROG_REPO = 'petclinic-repo'
+        // SONARQUBE_SERVER = 'sonarqube-server'   // Matches Manage Jenkins > System config
+        // JFROG_REGISTRY = 'trialepv7i1.jfrog.io'
+        // JFROG_REPO = 'petclinic-repo'
+        // DOCKER_IMAGE = 'petclinic-app'
+        // DOCKER_CONTAINER_PORT = '8082'
+
+        SONARQUBE_SERVER = 'sonarqube-server'   // same as before
+        JFROG_REGISTRY = 'triald122tk.jfrog.io' // new JFrog domain
+        JFROG_REPO = 'petclinic-docker-local'   // repo key, not display name
         DOCKER_IMAGE = 'petclinic-app'
         DOCKER_CONTAINER_PORT = '8082'
+
     }
 
     stages {
