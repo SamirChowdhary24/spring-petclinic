@@ -30,9 +30,7 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh '''
-                    mvn clean package -DskipTests
-                '''
+                sh 'mvn clean install' // Use 'install' to run tests and make artifact available
             }
         }
 
