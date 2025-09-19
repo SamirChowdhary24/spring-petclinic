@@ -281,6 +281,7 @@
 
     </plugins>
   </build>
+  
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
@@ -444,4 +445,13 @@
       </build>
     </profile>
   </profiles>
+  
+  <distributionManagement>
+    <repository>
+      <id>jfrog-artifactory</id>
+      <name>petclinic-repo</name>
+      <url>https://triald122tk.jfrog.io/artifactory/petclinic-docker-local</url>
+    </repository>
+  </distributionManagement>
+  
 </project>
