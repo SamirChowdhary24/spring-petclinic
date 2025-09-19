@@ -55,14 +55,16 @@ pipeline {
 
         stage('Trivy Scan') {
             steps {
+                echo "Running Trivy scan on Docker image..."
                 sh '''
-                    echo "Running Trivy scan on Docker image..."
                     docker run --rm \
-                      -v $HOME/.cache/trivy:/root/.cache/ \
-                      aquasec/trivy image --exit-code 1 --severity HIGH,CRITICAL ${DOCKER_IMAGE}:latest
+                        -v /var/lib/jenkins/.cache/trivy:/root/.cache/ \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy image --exit-code 1 --severity HIGH,CRITICAL petclinic-app:latest
                 '''
             }
         }
+
 
 
         stage('Push to JFrog') {
